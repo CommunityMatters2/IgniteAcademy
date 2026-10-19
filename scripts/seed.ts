@@ -24,6 +24,10 @@ const BADGES = [
 ];
 
 async function main() {
+  if (process.env.VERCEL && !process.env.DATABASE_URL) {
+    console.warn("⚠ DATABASE_URL not set on Vercel — skipping seed.");
+    return;
+  }
   const { db } = await import("../src/db");
   const { badge, term, user, profile } = await import("../src/db/schema");
   const { auth } = await import("../src/lib/auth");
@@ -49,19 +53,26 @@ async function main() {
   const name = process.env.ADMIN_NAME ?? "IGNITE Admin";
   if (!email || !password) {
     console.log("ℹ Set ADMIN_EMAIL and ADMIN_PASSWORD to create the first admin.");
-    return;
+  } else if (password.length < 8) {
+    throw new Error("ADMIN_PASSWORD must be at least 8 characters.");
+  } else {
+    const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
+    if (existing) {
+      await db.update(user).set({ role: "admin" }).where(eq(user.id, existing.id));
+      console.log(`✓ ${email} already exists — ensured admin role`);
+    } else {
+      const created = await auth.api.createUser({ body: { email, password, name } });
+      await db.update(user).set({ role: "admin", emailVerified: true }).where(eq(user.id, created.user.id));
+      await db.insert(profile).values({ userId: created.user.id, onboardedAt: new Date() }).onConflictDoNothing();
+      console.log(`✓ Admin created: ${email}`);
+    }
   }
-  if (password.length < 8) throw new Error("ADMIN_PASSWORD must be at least 8 characters.");
-  const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
-  if (existing) {
-    await db.update(user).set({ role: "admin" }).where(eq(user.id, existing.id));
-    console.log(`✓ ${email} already exists — ensured admin role`);
-    return;
+
+  // Optional demo accounts + sample activity for testing (set SEED_DEMO_PASSWORD).
+  if (process.env.SEED_DEMO_PASSWORD) {
+    const { seedDemo } = await import("./demo-data");
+    await seedDemo(process.env.SEED_DEMO_PASSWORD);
   }
-  const created = await auth.api.createUser({ body: { email, password, name } });
-  await db.update(user).set({ role: "admin", emailVerified: true }).where(eq(user.id, created.user.id));
-  await db.insert(profile).values({ userId: created.user.id, onboardedAt: new Date() }).onConflictDoNothing();
-  console.log(`✓ Admin created: ${email}`);
 }
 
 main()

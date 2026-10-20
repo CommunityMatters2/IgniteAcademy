@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowUpRight, BookOpen, Cake, ClipboardCheck, Crown, Flame, Megaphone, Pin, Star, Video } from "lucide-react";
+import { ClockCard } from "@/components/app/clock-card";
 import { EligibilityCard } from "@/components/app/eligibility-card";
 import { Avatar } from "@/components/ui/avatar";
 import { ConfettiOnMount } from "@/components/ui/confetti";
@@ -10,6 +11,8 @@ import { getEligibility } from "@/lib/eligibility";
 import { TZ, currentMonth, monthLabel, prettyDate, zonedDateTime, zonedToday } from "@/lib/dates";
 import { getLeaderboard, getUserMonthPoints } from "@/lib/leaderboard";
 import { requireStudent } from "@/lib/session";
+import { getClockCardData } from "@/lib/clock";
+import { getSettings } from "@/lib/settings";
 import {
   getAnnouncements,
   getBadgeCount,
@@ -26,7 +29,9 @@ export const metadata: Metadata = { title: "Home" };
 export default async function HomePage({ searchParams }: PageProps<"/home">) {
   const { user, profile } = await requireStudent();
   const month = currentMonth();
-  const [eligibility, points, board, badges, streak, nextSession, news, forms, birthdays, sp] = await Promise.all([
+  const settings = await getSettings();
+  const [clock, eligibility, points, board, badges, streak, nextSession, news, forms, birthdays, sp] = await Promise.all([
+    getClockCardData(user.id, settings),
     getEligibility(user.id),
     getUserMonthPoints(user.id, month),
     getLeaderboard(month, 100),
@@ -77,6 +82,13 @@ export default async function HomePage({ searchParams }: PageProps<"/home">) {
           </span>
         </Link>
       )}
+
+      <div className="mb-4">
+        <ClockCard {...clock} />
+        <Link href="/clock" className="mt-2 inline-block px-1 text-sm font-semibold text-brand">
+          My hours →
+        </Link>
+      </div>
 
       <EligibilityCard eligibility={eligibility} />
 

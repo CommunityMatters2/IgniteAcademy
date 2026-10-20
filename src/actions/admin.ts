@@ -12,6 +12,7 @@ import {
   badge,
   badgeClaim,
   birthdayWish,
+  clockSession,
   cohort,
   counselorVerification,
   form,
@@ -34,7 +35,8 @@ import { appUrl } from "@/lib/env";
 import { inviteUser, resendInvite } from "@/lib/invites";
 import { requireAdmin, requireStaff, type Role } from "@/lib/session";
 import { getSettings, saveSettings, type ProgramSettings } from "@/lib/settings";
-import { monthLabel, prettyDate } from "@/lib/dates";
+import { monthLabel, prettyDate, zonedToday, zonedWallToDate } from "@/lib/dates";
+import { maybeAwardVisitPoints } from "@/lib/clock";
 import { deleteStoredFile } from "@/lib/storage";
 import type { ActionState } from "@/lib/utils";
 
@@ -723,12 +725,143 @@ export async function saveSettingsAction(_: ActionState, fd: FormData): Promise<
       tutoring: n("p_tutoring", cur.points.tutoring),
       ideaShipped: n("p_ideaShipped", cur.points.ideaShipped),
       birthday: n("p_birthday", cur.points.birthday),
+      clockVisit: n("p_clockVisit", cur.points.clockVisit),
     },
+    clock: cur.clock,
   };
   await saveSettings(next);
   await audit(me.id, "settings.update", undefined, next as unknown as Record<string, unknown>);
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Settings saved." };
+}
+
+export async function saveClockSettingsAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { user: me } = await requireAdmin();
+  const latRaw = str(fd.get("lat"));
+  const lngRaw = str(fd.get("lng"));
+  const lat = latRaw ? Number(latRaw) : null;
+  const lng = lngRaw ? Number(lngRaw) : null;
+  if ((lat == null) !== (lng == null)) return { error: "Enter both latitude and longitude (or neither)." };
+  if (lat != null && (!Number.isFinite(lat) || Math.abs(lat) > 90)) return { error: "Latitude must be between -90 and 90." };
+  if (lng != null && (!Number.isFinite(lng) || Math.abs(lng) > 180)) return { error: "Longitude must be between -180 and 180." };
+  const radiusM = Math.round(Number(str(fd.get("radiusM"))));
+  if (!Number.isFinite(radiusM) || radiusM < 25 || radiusM > 2000) return { error: "Distance must be between 25 and 2000 meters." };
+  const minMinutes = Math.round(Number(str(fd.get("minMinutes"))));
+  if (!Number.isFinite(minMinutes) || minMinutes < 0 || minMinutes > 600) return { error: "Minimum visit must be 0–600 minutes." };
+
+  const cur = await getSettings();
+  const next: ProgramSettings = {
+    ...cur,
+    clock: {
+      enabled: fd.get("enabled") === "on",
+      siteName: str(fd.get("siteName")).slice(0, 60) || "IGNITE Academy",
+      lat: lat == null ? null : Math.round(lat * 1e6) / 1e6,
+      lng: lng == null ? null : Math.round(lng * 1e6) / 1e6,
+      radiusM,
+      minMinutes,
+    },
+  };
+  await saveSettings(next);
+  await audit(me.id, "settings.clock", undefined, next.clock as unknown as Record<string, unknown>);
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Clock-in location saved." };
+}
+
+/* ───────────────────────── Clock in / out (staff) ───────────────────────── */
+
+function readWallTime(fd: FormData, key: string) {
+  const v = str(fd.get(key));
+  return v ? zonedWallToDate(v) : null;
+}
+
+function validateVisitTimes(clockInAt: Date | null, clockOutAt: Date | null): string | null {
+  if (!clockInAt) return "Enter a clock-in time.";
+  if (clockInAt.getTime() > Date.now() + 5 * 60_000) return "Clock-in can't be in the future.";
+  if (clockOutAt) {
+    if (clockOutAt <= clockInAt) return "Clock-out must be after clock-in.";
+    if (clockOutAt.getTime() > Date.now() + 5 * 60_000) return "Clock-out can't be in the future.";
+    if (clockOutAt.getTime() - clockInAt.getTime() > 16 * 3_600_000) return "A visit can't be longer than 16 hours.";
+  }
+  return null;
+}
+
+const OPEN_CONFLICT = "This student already has an open visit that day.";
+
+function revalidateClock(userId: string) {
+  revalidatePath("/admin/clock");
+  revalidatePath(`/admin/users/${userId}`);
+  revalidatePath("/home");
+  revalidatePath("/clock");
+}
+
+/** Edit a visit's times (also how staff close a visit someone forgot to clock out of). */
+export async function saveVisitAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { user: me } = await requireAdmin();
+  const row = await db.query.clockSession.findFirst({ where: eq(clockSession.id, str(fd.get("id"))) });
+  if (!row) return { error: "Visit not found." };
+  const clockInAt = readWallTime(fd, "clockInAt");
+  const clockOutAt = readWallTime(fd, "clockOutAt");
+  const invalid = validateVisitTimes(clockInAt, clockOutAt);
+  if (invalid) return { error: invalid };
+  const day = zonedToday(clockInAt!).iso;
+  if (!clockOutAt && day !== zonedToday().iso) return { error: "Add a clock-out time for a past day." };
+
+  let updated;
+  try {
+    [updated] = await db
+      .update(clockSession)
+      .set({ clockInAt: clockInAt!, clockOutAt, day, editedBy: me.id, staffNote: opt(fd.get("note")) })
+      .where(eq(clockSession.id, row.id))
+      .returning();
+  } catch {
+    return { error: OPEN_CONFLICT };
+  }
+  const pts = await maybeAwardVisitPoints(updated, await getSettings());
+  await audit(me.id, "clock.edit", { type: "user", id: row.userId }, {
+    visitId: row.id,
+    from: { in: row.clockInAt, out: row.clockOutAt },
+    to: { in: clockInAt, out: clockOutAt },
+  });
+  revalidateClock(row.userId);
+  return { ok: true, message: pts ? `Visit saved. +${pts} points awarded.` : "Visit saved." };
+}
+
+/** Add a visit by hand (e.g. the student's phone died). */
+export async function addVisitAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { user: me } = await requireAdmin();
+  const student = await db.query.user.findFirst({ where: eq(user.id, str(fd.get("userId"))) });
+  if (!student || student.role !== "student") return { error: "Pick a student." };
+  const clockInAt = readWallTime(fd, "clockInAt");
+  const clockOutAt = readWallTime(fd, "clockOutAt");
+  if (!clockOutAt) return { error: "Enter a clock-out time." };
+  const invalid = validateVisitTimes(clockInAt, clockOutAt);
+  if (invalid) return { error: invalid };
+
+  const [row] = await db
+    .insert(clockSession)
+    .values({
+      userId: student.id,
+      day: zonedToday(clockInAt!).iso,
+      clockInAt: clockInAt!,
+      clockOutAt,
+      editedBy: me.id,
+      staffNote: opt(fd.get("note")),
+    })
+    .returning();
+  const pts = await maybeAwardVisitPoints(row, await getSettings());
+  await audit(me.id, "clock.add", { type: "user", id: student.id }, { visitId: row.id, in: clockInAt, out: clockOutAt });
+  revalidateClock(student.id);
+  return { ok: true, message: pts ? `Visit added. +${pts} points awarded.` : "Visit added." };
+}
+
+export async function deleteVisitAction(fd: FormData) {
+  const { user: me } = await requireAdmin();
+  const row = await db.query.clockSession.findFirst({ where: eq(clockSession.id, str(fd.get("id"))) });
+  if (!row) return;
+  await db.delete(clockSession).where(eq(clockSession.id, row.id));
+  if (row.pointsAwarded > 0) await awardPoints(row.userId, -row.pointsAwarded, "Visit removed by staff", "clock");
+  await audit(me.id, "clock.delete", { type: "user", id: row.userId }, { visitId: row.id, in: row.clockInAt, out: row.clockOutAt });
+  revalidateClock(row.userId);
 }
 
 export async function createTermAction(_: ActionState, fd: FormData): Promise<ActionState> {

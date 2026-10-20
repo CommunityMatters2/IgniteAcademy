@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { desc } from "drizzle-orm";
-import { Star, Trash2 } from "lucide-react";
+import { MapPin, Star, Trash2 } from "lucide-react";
 import { AdminForm } from "@/components/admin/admin-forms";
+import { SiteLocationFields } from "@/components/admin/clock-admin";
 import { Button } from "@/components/ui/button";
 import { Field, Input, SubmitButton, Switch } from "@/components/ui/form";
 import { Card, PageHeader, Pill, SectionTitle } from "@/components/ui/primitives";
@@ -11,6 +12,7 @@ import {
   createCohortAction,
   createTermAction,
   deleteCohortAction,
+  saveClockSettingsAction,
   saveSettingsAction,
   termOpAction,
 } from "@/actions/admin";
@@ -29,6 +31,7 @@ const POINT_LABELS: [keyof Awaited<ReturnType<typeof getSettings>>["points"], st
   ["tutoring", "Attended tutoring"],
   ["ideaShipped", "Idea marked done"],
   ["birthday", "Birthday bonus"],
+  ["clockVisit", "Program visit (once a day)"],
 ];
 
 export default async function SettingsPage() {
@@ -67,6 +70,35 @@ export default async function SettingsPage() {
         </Card>
 
         <div className="space-y-6">
+          <Card id="clock">
+            <p className="flex items-center gap-2 font-display text-lg font-semibold">
+              <MapPin className="size-4 text-brand" /> Clock in / out
+            </p>
+            <p className="mb-4 text-sm text-muted">
+              Students can only clock in or out when their phone is this close to the program site.
+              {s.clock.lat == null && <b className="text-gold"> Set the location to turn clock-in on.</b>}
+            </p>
+            <AdminForm action={saveClockSettingsAction} className="space-y-4">
+              <Switch name="enabled" defaultChecked={s.clock.enabled} label="Students can clock in and out" />
+              <Field label="Place name (shown to students)">
+                <Input name="siteName" maxLength={60} defaultValue={s.clock.siteName} />
+              </Field>
+              <SiteLocationFields lat={s.clock.lat} lng={s.clock.lng} />
+              <p className="text-xs text-muted">Tip: open this page on your phone while standing at the site and tap “Use my current location”.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Allowed distance (meters)">
+                  <Input name="radiusM" type="number" min={25} max={2000} defaultValue={s.clock.radiusM} />
+                </Field>
+                <Field label="Minimum visit for points (min)">
+                  <Input name="minMinutes" type="number" min={0} max={600} defaultValue={s.clock.minMinutes} />
+                </Field>
+              </div>
+              <SubmitButton block variant="secondary">
+                Save clock-in settings
+              </SubmitButton>
+            </AdminForm>
+          </Card>
+
           <Card>
             <p className="font-display text-lg font-semibold">Grading periods</p>
             <p className="mb-4 text-sm text-muted">Students upload a report card for the current period.</p>

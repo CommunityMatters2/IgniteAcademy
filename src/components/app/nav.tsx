@@ -13,6 +13,7 @@ import {
   Plus,
   UserRound,
   CalendarCheck,
+  Clock,
   Sparkles,
 } from "lucide-react";
 import { Sheet, useSheet } from "@/components/ui/sheet";
@@ -27,6 +28,7 @@ const tabs = [
 ];
 
 const quick = [
+  { href: "/clock", label: "Clock in / out", body: "Log your time at IGNITE", icon: Clock, tone: "bg-brand text-brand-fg" },
   { href: "/school?add=report", label: "Upload report card", body: "Photo or PDF from this grading period", icon: GraduationCap, tone: "bg-brand text-brand-fg" },
   { href: "/school?add=checkin", label: "Weekly attendance check-in", body: "Prove you're showing up on time", icon: CalendarCheck, tone: "bg-info text-white" },
   { href: "/awards?claim=1", label: "Claim a badge", body: "Got your license? Passed a class? Show us", icon: Sparkles, tone: "bg-gold text-gold-fg" },
@@ -81,6 +83,7 @@ export function SideNav() {
 
 export function SideNavView({ pathname }: { pathname: string }) {
   const extra = [
+    { href: "/clock", label: "My hours", icon: Clock },
     { href: "/leaderboard", label: "Leaderboard", icon: Award },
     { href: "/voice", label: "Ideas", icon: Lightbulb },
     { href: "/forms", label: "Forms", icon: ClipboardCheck },

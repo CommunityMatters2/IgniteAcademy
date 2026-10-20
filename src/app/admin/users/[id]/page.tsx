@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { ArrowLeft, Eye, FileText, KeyRound, Mail, Pause, Play, ShieldCheck, Trash2 } from "lucide-react";
 import { AdminForm } from "@/components/admin/admin-forms";
+import { StudentClockSummary } from "@/components/admin/student-clock";
 import { EligibilityCard } from "@/components/app/eligibility-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -251,6 +252,9 @@ export default async function UserDetail({ params }: PageProps<"/admin/users/[id
               ) : (
                 <p className="text-sm text-muted">None yet.</p>
               )}
+
+              <SectionTitle>Clock-ins</SectionTitle>
+              <StudentClockSummary userId={id} />
             </div>
           )}
         </div>

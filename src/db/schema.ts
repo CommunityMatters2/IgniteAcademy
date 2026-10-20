@@ -216,6 +216,41 @@ export const counselorVerification = pgTable("counselor_verification", {
   createdAt: createdAt(),
 });
 
+/* ───────────────────────── Program clock in / out ───────────────────────── */
+
+/**
+ * One visit to the IGNITE site. `day` is the program-time-zone date of clock-in.
+ * A student can have at most one open visit per day; open visits from earlier days
+ * ("forgot to clock out") stay open until staff set the clock-out time.
+ */
+export const clockSession = pgTable(
+  "clock_session",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    clockInAt: timestamp("clock_in_at", { withTimezone: true }).notNull(),
+    clockOutAt: timestamp("clock_out_at", { withTimezone: true }),
+    /** Distance from the site in meters and GPS accuracy at clock in / out (null when set by staff). */
+    inDistanceM: integer("in_distance_m"),
+    inAccuracyM: integer("in_accuracy_m"),
+    outDistanceM: integer("out_distance_m"),
+    outAccuracyM: integer("out_accuracy_m"),
+    pointsAwarded: integer("points_awarded").notNull().default(0),
+    /** Set when staff created or changed the times. */
+    editedBy: text("edited_by"),
+    staffNote: text("staff_note"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("clock_user_day_idx").on(t.userId, t.day),
+    index("clock_day_idx").on(t.day),
+    uniqueIndex("clock_one_open_per_day").on(t.userId, t.day).where(sql`${t.clockOutAt} is null`),
+  ],
+);
+
 /* ───────────────────────── Help center ───────────────────────── */
 
 export const tutorSession = pgTable("tutor_session", {
@@ -495,6 +530,10 @@ export const gradeRelations = relations(grade, ({ one }) => ({
 
 export const checkinRelations = relations(attendanceCheckin, ({ one }) => ({
   user: one(user, { fields: [attendanceCheckin.userId], references: [user.id] }),
+}));
+
+export const clockSessionRelations = relations(clockSession, ({ one }) => ({
+  user: one(user, { fields: [clockSession.userId], references: [user.id] }),
 }));
 
 export const userBadgeRelations = relations(userBadge, ({ one }) => ({

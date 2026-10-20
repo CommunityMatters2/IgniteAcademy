@@ -10,6 +10,7 @@ import {
   badge,
   badgeClaim,
   birthdayWish,
+  clockSession,
   form,
   formResponse,
   grade,
@@ -28,7 +29,9 @@ import { requireStudent, requireUser } from "@/lib/session";
 import { saveFile, deleteStoredFile, UploadError, validateUpload } from "@/lib/storage";
 import { trySendEmail } from "@/lib/email";
 import { appUrl } from "@/lib/env";
-import { weekOf, zonedDateTime, zonedToday } from "@/lib/dates";
+import { formatMinutes, weekOf, zonedDateTime, zonedTime, zonedToday } from "@/lib/dates";
+import { checkLocation, getOpenToday, maybeAwardVisitPoints, visitMinutes } from "@/lib/clock";
+import { getSettings } from "@/lib/settings";
 import type { ActionState } from "@/lib/utils";
 
 const str = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
@@ -210,6 +213,62 @@ export async function submitCheckinAction(_: ActionState, fd: FormData): Promise
   revalidatePath("/school");
   revalidatePath("/home");
   return { ok: true, message: "Check-in submitted. Keep that streak alive! 🔥" };
+}
+
+/* ───────────────────────── Clock in / out ───────────────────────── */
+
+function readPosition(fd: FormData) {
+  // Missing values become NaN (not 0) so checkLocation rejects them.
+  const num = (k: string) => (str(fd.get(k)) === "" ? NaN : Number(str(fd.get(k))));
+  return { lat: num("lat"), lng: num("lng"), accuracy: num("accuracy") };
+}
+
+export async function clockInAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { user: me } = await requireStudent();
+  const settings = await getSettings();
+  if (!settings.clock.enabled) return { error: "Clock-in is turned off right now." };
+  const pos = readPosition(fd);
+  const check = checkLocation(settings.clock, pos.lat, pos.lng, pos.accuracy);
+  if (!check.ok) return { error: check.error };
+
+  if (await getOpenToday(me.id)) return { error: "You're already clocked in." };
+  try {
+    await db.insert(clockSession).values({
+      userId: me.id,
+      day: zonedToday().iso,
+      clockInAt: new Date(),
+      inDistanceM: check.distanceM,
+      inAccuracyM: check.accuracyM,
+    });
+  } catch {
+    // The unique index allows one open visit per day; a double tap lands here.
+    return { error: "You're already clocked in." };
+  }
+  revalidatePath("/home");
+  revalidatePath("/clock");
+  return { ok: true, message: `Clocked in at ${zonedTime(new Date())}. Welcome! 👋` };
+}
+
+export async function clockOutAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { user: me } = await requireStudent();
+  const settings = await getSettings();
+  const open = await getOpenToday(me.id);
+  if (!open) return { error: "You're not clocked in today." };
+  const pos = readPosition(fd);
+  const check = checkLocation(settings.clock, pos.lat, pos.lng, pos.accuracy);
+  if (!check.ok) return { error: check.error };
+
+  const [closed] = await db
+    .update(clockSession)
+    .set({ clockOutAt: new Date(), outDistanceM: check.distanceM, outAccuracyM: check.accuracyM })
+    .where(and(eq(clockSession.id, open.id), isNull(clockSession.clockOutAt)))
+    .returning();
+  if (!closed) return { error: "You're not clocked in today." };
+  const pts = await maybeAwardVisitPoints(closed, settings);
+  revalidatePath("/home");
+  revalidatePath("/clock");
+  const length = formatMinutes(visitMinutes(closed));
+  return { ok: true, message: pts ? `Clocked out after ${length}. +${pts} points ⭐` : `Clocked out after ${length}. See you next time!` };
 }
 
 /* ───────────────────────── Help center ───────────────────────── */

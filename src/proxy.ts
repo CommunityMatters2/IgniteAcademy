@@ -12,6 +12,7 @@ const PROTECTED = [
   "/birthdays",
   "/me",
   "/notifications",
+  "/clock",
   "/welcome",
   "/admin",
 ];

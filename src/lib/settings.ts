@@ -18,6 +18,18 @@ export type ProgramSettings = {
     tutoring: number;
     ideaShipped: number;
     birthday: number;
+    clockVisit: number;
+  };
+  /** Program site for location-checked clock in / out. lat/lng null = not set up yet. */
+  clock: {
+    enabled: boolean;
+    siteName: string;
+    lat: number | null;
+    lng: number | null;
+    /** How close (meters) a phone must be to the site. */
+    radiusM: number;
+    /** Minimum visit length (minutes) to earn the daily visit points. */
+    minMinutes: number;
   };
 };
 
@@ -33,6 +45,15 @@ export const DEFAULT_SETTINGS: ProgramSettings = {
     tutoring: 15,
     ideaShipped: 20,
     birthday: 10,
+    clockVisit: 10,
+  },
+  clock: {
+    enabled: true,
+    siteName: "IGNITE Academy",
+    lat: null,
+    lng: null,
+    radiusM: 150,
+    minMinutes: 30,
   },
 };
 
@@ -43,6 +64,7 @@ export async function getSettings(): Promise<ProgramSettings> {
     ...DEFAULT_SETTINGS,
     ...saved,
     points: { ...DEFAULT_SETTINGS.points, ...(saved.points ?? {}) },
+    clock: { ...DEFAULT_SETTINGS.clock, ...(saved.clock ?? {}) },
   };
 }
 

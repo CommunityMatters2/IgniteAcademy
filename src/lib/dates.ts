@@ -64,6 +64,52 @@ export function zonedDateTime(date: Date, opts: Intl.DateTimeFormatOptions = {})
   }).format(date);
 }
 
+/** Offset (ms) of the program time zone from UTC at `date`. */
+function tzOffsetMs(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return asUtc - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+/** "YYYY-MM-DDTHH:mm" wall time in the program time zone → Date. Null if malformed. */
+export function zonedWallToDate(local: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!m) return null;
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  // Two passes handle the hour around daylight-saving changes.
+  let ts = guess - tzOffsetMs(new Date(guess));
+  ts = guess - tzOffsetMs(new Date(ts));
+  return new Date(ts);
+}
+
+/** Date → "YYYY-MM-DDTHH:mm" in the program time zone (for datetime-local inputs). */
+export function toZonedInput(date: Date) {
+  const shifted = new Date(date.getTime() + tzOffsetMs(date));
+  return shifted.toISOString().slice(0, 16);
+}
+
+/** "3:05 PM" in the program time zone. */
+export function zonedTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }).format(date);
+}
+
+/** 95 → "1h 35m", 40 → "40m". */
+export function formatMinutes(min: number) {
+  const m = Math.max(0, Math.round(min));
+  const h = Math.floor(m / 60);
+  return h ? `${h}h ${m % 60}m` : `${m}m`;
+}
+
 /** Days until the next occurrence of a birthday (0 = today). */
 export function daysUntilBirthday(birthday: string, todayIso: string) {
   const [, bm, bd] = birthday.split("-").map(Number);

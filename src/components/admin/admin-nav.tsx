@@ -7,6 +7,7 @@ import {
   BookOpen,
   Cake,
   ClipboardList,
+  Clock,
   Crown,
   Inbox,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import { cn } from "@/lib/utils";
 export const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/reviews", label: "Review queue", icon: Inbox },
+  { href: "/admin/clock", label: "Clock-ins", icon: Clock },
   { href: "/admin/users", label: "Students & staff", icon: Users },
   { href: "/admin/sessions", label: "Help Center", icon: BookOpen },
   { href: "/admin/awards", label: "Awards", icon: Award },

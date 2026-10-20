@@ -1,0 +1,5 @@
+.env*
+.pglite
+.uploads
+.next
+node_modules

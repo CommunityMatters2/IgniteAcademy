@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/auth/forms";
+import { LogoFull } from "@/components/brand/logo";
 import { Skeleton } from "@/components/ui/primitives";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -8,6 +9,7 @@ export const metadata: Metadata = { title: "Sign in" };
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <div className="animate-rise">
+      <LogoFull size={120} className="mx-auto mb-8" />
       <h1 className="font-display text-4xl font-bold tracking-tight">
         Welcome <span className="text-brand">back</span>.
       </h1>

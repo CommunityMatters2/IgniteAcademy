@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { asc, desc, eq, gte, lte, and } from "drizzle-orm";
-import { ArrowRight, CalendarClock, Inbox, UserPlus } from "lucide-react";
+import { AlertTriangle, ArrowRight, BadgeCheck, CalendarClock, Inbox, PauseCircle, UserPlus, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, PageHeader, Pill, SectionTitle, Stat } from "@/components/ui/primitives";
+import { Card, Pill, SectionTitle, Stat } from "@/components/ui/primitives";
 import { db } from "@/db";
 import { auditLog, tutorSession, user } from "@/db/schema";
 import { getPendingCounts, getStudents } from "@/lib/admin-data";
@@ -47,22 +47,33 @@ export default async function AdminDashboard() {
 
   return (
     <div className="animate-rise">
-      <PageHeader
-        eyebrow={prettyDate(new Date(), "EEEE, MMMM d")}
-        title={`Hi ${me.name.split(" ")[0]} 👋`}
-        subtitle="Here's how IGNITE is doing."
-        action={
-          <Link href="/admin/users?invite=1" className={buttonVariants({ size: "sm" })}>
-            <UserPlus /> Invite
-          </Link>
-        }
-      />
+      <section className="hero-panel relative mb-6 overflow-hidden rounded-3xl px-6 py-6 shadow-card sm:px-8 sm:py-7">
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold tracking-[0.16em] text-gold uppercase">
+              {prettyDate(new Date(), "EEEE, MMMM d")}
+            </p>
+            <h1 className="mt-1.5 font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl">
+              Hi {me.name.split(" ")[0]} 👋
+            </h1>
+            <p className="mt-1.5 text-[15px] text-white/75">Here&apos;s how IGNITE is doing today.</p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/admin/reviews" className={buttonVariants({ size: "sm", variant: "gold" })}>
+              <Inbox /> {pending.total ? `${pending.total} to review` : "Reviews"}
+            </Link>
+            <Link href="/admin/users?invite=1" className={buttonVariants({ size: "sm" })}>
+              <UserPlus /> Invite
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Active students" value={students.length} hint={notActivated ? `${notActivated} not activated yet` : "All activated"} />
-        <Stat label="Eligible" value={counts.eligible} tone="green" hint={`${students.length ? Math.round((counts.eligible / students.length) * 100) : 0}% of students`} />
-        <Stat label="Needs action" value={counts.needs_action} tone="gold" />
-        <Stat label="On hold" value={counts.on_hold} tone="red" />
+        <Stat label="Active students" value={students.length} tone="blue" icon={<Users />} hint={notActivated ? `${notActivated} not activated yet` : "All activated"} />
+        <Stat label="Eligible" value={counts.eligible} tone="green" icon={<BadgeCheck />} hint={`${students.length ? Math.round((counts.eligible / students.length) * 100) : 0}% of students`} />
+        <Stat label="Needs action" value={counts.needs_action} tone="gold" icon={<AlertTriangle />} hint="Missing a requirement" />
+        <Stat label="On hold" value={counts.on_hold} tone="red" icon={<PauseCircle />} hint="Not eligible right now" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, Cake, Crown, GraduationCap, Lightbulb, Sparkles } from "lucide-react";
-import { Glow, Logo, Wordmark } from "@/components/brand/logo";
+import { Glow, Logo, LogoFull, Wordmark } from "@/components/brand/logo";
 import { buttonVariants } from "@/components/ui/button";
 
 const features = [
@@ -19,8 +19,8 @@ export default function Landing() {
       <Glow />
       <header className="relative z-10 mx-auto flex max-w-5xl items-center justify-between px-5 pt-safe py-5">
         <div className="flex items-center gap-2.5">
-          <Logo size={36} />
-          <Wordmark />
+          <Logo size={40} />
+          <Wordmark height={13} />
         </div>
         <Link href="/login" className={buttonVariants({ variant: "secondary", size: "sm" })}>
           Sign in
@@ -28,7 +28,8 @@ export default function Landing() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-5xl px-5 pb-20">
-        <section className="pt-10 pb-14 sm:pt-20">
+        <section className="pt-10 pb-14 sm:pt-16">
+          <LogoFull size={150} className="mb-8 animate-rise" />
           <p className="mb-5 inline-flex animate-rise items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs font-semibold text-muted backdrop-blur">
             <span className="size-1.5 rounded-full bg-brand shadow-[0_0_8px_var(--brand)]" />
             Community Matters 2 · IGNITE Academy
@@ -37,7 +38,7 @@ export default function Landing() {
             Show up. <br />
             Level up. <br />
             <span className="bg-gradient-to-r from-brand via-brand-strong to-gold bg-clip-text text-transparent">
-              Ignite.
+              IGNITE.
             </span>
           </h1>
           <p className="mt-6 max-w-md animate-rise text-lg text-muted text-balance [animation-delay:80ms]">

@@ -14,6 +14,7 @@ import {
   UserRound,
   CalendarCheck,
   Clock,
+  Crown,
   Sparkles,
 } from "lucide-react";
 import { Sheet, useSheet } from "@/components/ui/sheet";
@@ -81,34 +82,60 @@ export function SideNav() {
   return <SideNavView pathname={usePathname()} />;
 }
 
+/** Desktop sidebar: everyday items first, help and ideas at the end. */
+const sideGroups = [
+  {
+    title: "My IGNITE",
+    links: [
+      { href: "/home", label: "Home", icon: House },
+      { href: "/clock", label: "My hours", icon: Clock },
+      { href: "/school", label: "School", icon: GraduationCap },
+      { href: "/awards", label: "Awards", icon: Award },
+      { href: "/leaderboard", label: "Leaderboard", icon: Crown },
+      { href: "/forms", label: "Forms", icon: ClipboardCheck },
+      { href: "/me", label: "Me", icon: UserRound },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { href: "/help", label: "Help", icon: BookOpen },
+      { href: "/voice", label: "Ideas", icon: Lightbulb },
+    ],
+  },
+];
+
 export function SideNavView({ pathname }: { pathname: string }) {
-  const extra = [
-    { href: "/clock", label: "My hours", icon: Clock },
-    { href: "/leaderboard", label: "Leaderboard", icon: Award },
-    { href: "/voice", label: "Ideas", icon: Lightbulb },
-    { href: "/forms", label: "Forms", icon: ClipboardCheck },
-  ];
   return (
-    <nav aria-label="Main" className="hidden md:block">
-      <ul className="space-y-1">
-        {[...tabs, ...extra].map((t) => {
-          const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
-          return (
-            <li key={t.href}>
-              <Link
-                href={t.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors",
-                  active ? "bg-brand-soft text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
-                )}
-              >
-                <t.icon className={cn("size-5", active && "text-brand")} />
-                {t.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <nav aria-label="Main" className="hidden space-y-5 md:block">
+      {sideGroups.map((g) => (
+        <div key={g.title}>
+          <p className="mb-1.5 px-3 text-[10px] font-bold tracking-[0.16em] text-nav-label uppercase">{g.title}</p>
+          <ul className="space-y-0.5">
+            {g.links.map((t) => {
+              const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
+              return (
+                <li key={t.href}>
+                  <Link
+                    href={t.href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold transition-colors",
+                      active
+                        ? "bg-brand text-white shadow-[0_8px_20px_-8px_var(--brand)]"
+                        : "text-nav-muted hover:bg-nav-hover hover:text-nav-fg",
+                    )}
+                  >
+                    <t.icon className={cn("size-5", !active && "group-hover:text-gold")} />
+                    <span className="flex-1">{t.label}</span>
+                    {active && <span className="size-1.5 rounded-full bg-gold" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </nav>
   );
 }

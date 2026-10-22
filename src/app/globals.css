@@ -22,25 +22,51 @@
   --info: #6ea8ff;
   --info-soft: color-mix(in oklab, var(--info) 16%, transparent);
   --ring: color-mix(in oklab, var(--brand) 60%, transparent);
+  --gold-ink: var(--gold);
+  --card-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -18px rgb(0 0 0 / 0.8);
+
+  /* Sidebar panel: deep forest green, same in both themes. */
+  --nav-bg: #07130d;
+  --nav-bg-2: #0d2017;
+  --nav-fg: #f2f7f4;
+  --nav-muted: #9fb5a8;
+  --nav-label: #5f7a6b;
+  --nav-hover: rgb(255 255 255 / 0.07);
+  --nav-border: rgb(255 255 255 / 0.08);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #f6f6f3;
+  /* Sage-grey canvas so white cards stand out with clear edges. */
+  --bg: #e8ece6;
   --surface: #ffffff;
-  --surface-2: #f0f0ec;
-  --surface-3: #e7e7e2;
-  --border: #e2e2dc;
-  --fg: #0b0b0c;
-  --muted: #5f5f67;
-  --brand: #00a656;
-  --brand-strong: #008f4a;
+  --surface-2: #f1f4ef;
+  --surface-3: #e1e7dd;
+  --border: #cfd7cb;
+  --fg: #07110b;
+  --muted: #47524b;
+  --brand: #00a352;
+  --brand-strong: #008743;
   --brand-fg: #ffffff;
-  --gold: #fddd5a;
+  --brand-soft: color-mix(in oklab, var(--brand) 14%, white);
+  --gold: #fcd535;
   --gold-fg: #1c1600;
-  --danger: #e5383b;
-  --info: #2f6fdf;
+  --gold-ink: #a87700;
+  --gold-soft: color-mix(in oklab, var(--gold) 26%, white);
+  --danger: #d92d30;
+  --danger-soft: color-mix(in oklab, var(--danger) 12%, white);
+  --info: #1f5fd6;
+  --info-soft: color-mix(in oklab, var(--info) 12%, white);
+  --card-shadow: 0 1px 2px rgb(7 17 11 / 0.06), 0 8px 24px -12px rgb(7 17 11 / 0.18);
   color-scheme: light;
+}
+
+/* Bright yellow is great as a fill but hard to read as text on white. */
+:root[data-theme="light"] .text-gold {
+  color: var(--gold-ink);
+}
+:root[data-theme="light"] :is(.hero-panel, .nav-panel) .text-gold {
+  color: var(--gold);
 }
 
 @theme inline {
@@ -62,6 +88,15 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-gold-ink: var(--gold-ink);
+  --color-nav: var(--nav-bg);
+  --color-nav-2: var(--nav-bg-2);
+  --color-nav-fg: var(--nav-fg);
+  --color-nav-muted: var(--nav-muted);
+  --color-nav-label: var(--nav-label);
+  --color-nav-hover: var(--nav-hover);
+  --color-nav-border: var(--nav-border);
+  --shadow-card: var(--card-shadow);
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-bricolage), var(--font-geist), ui-sans-serif, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -148,6 +183,22 @@ body {
 @utility glow-gold {
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 45%, transparent),
     0 12px 40px -12px color-mix(in oklab, var(--gold) 55%, transparent);
+}
+
+@utility nav-panel {
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in oklab, var(--brand) 22%, transparent), transparent 60%),
+    radial-gradient(90% 40% at 100% 100%, color-mix(in oklab, var(--gold) 10%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--nav-bg-2), var(--nav-bg));
+  color: var(--nav-fg);
+}
+
+@utility hero-panel {
+  background:
+    radial-gradient(80% 120% at 100% 0%, color-mix(in oklab, var(--gold) 28%, transparent), transparent 55%),
+    radial-gradient(70% 140% at 0% 100%, color-mix(in oklab, var(--brand) 55%, transparent), transparent 60%),
+    linear-gradient(135deg, #0a1f15, #05100a);
+  color: #f2f7f4;
 }
 
 @utility text-balance {

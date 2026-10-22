@@ -17,9 +17,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </Suspense>
       <header className="glass sticky top-0 z-30 border-b border-border/60 pt-safe md:hidden">
         <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-5">
-          <Link href="/home" className="flex items-center gap-2">
-            <Logo size={30} />
-            <Wordmark className="text-base" />
+          <Link href="/home" className="flex items-center gap-2.5">
+            <Logo size={32} />
+            <Wordmark height={11} />
           </Link>
           <Link
             href="/notifications"
@@ -35,17 +35,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="mx-auto flex max-w-6xl gap-8 md:px-6 md:pt-6">
-        <aside className="sticky top-6 hidden h-[calc(100dvh-3rem)] w-60 shrink-0 flex-col md:flex">
-          <Link href="/home" className="mb-8 flex items-center gap-2.5 px-4">
-            <Logo size={36} />
-            <Wordmark />
+        <aside className="nav-panel sticky top-6 hidden h-[calc(100dvh-3rem)] w-64 shrink-0 flex-col rounded-3xl p-4 shadow-card md:flex">
+          <Link href="/home" className="mb-6 flex items-center gap-3 px-2 py-1">
+            <Logo size={44} on="dark" />
+            <Wordmark variant="stacked" height={30} on="dark" />
           </Link>
-          <Suspense fallback={<SideNavView pathname="" />}>
-            <SideNav />
-          </Suspense>
+          <div className="no-scrollbar -mx-1 flex-1 overflow-y-auto px-1">
+            <Suspense fallback={<SideNavView pathname="" />}>
+              <SideNav />
+            </Suspense>
+          </div>
           <Link
             href="/notifications"
-            className="mt-1 flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium text-muted hover:bg-surface-2 hover:text-fg"
+            className="mt-3 flex items-center gap-3 rounded-xl border-t border-nav-border px-3 pt-4 pb-2.5 text-[15px] font-semibold text-nav-muted hover:text-nav-fg"
           >
             <Bell className="size-5" /> Notifications
           </Link>

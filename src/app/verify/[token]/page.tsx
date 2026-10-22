@@ -15,8 +15,8 @@ export default function VerifyPage({ params }: PageProps<"/verify/[token]">) {
     <div className="relative flex min-h-dvh flex-col px-5">
       <Glow />
       <header className="relative z-10 flex items-center gap-2.5 py-5">
-        <Logo size={34} />
-        <Wordmark />
+        <Logo size={40} />
+        <Wordmark height={13} />
       </header>
       <main className="relative z-10 mx-auto w-full max-w-md flex-1 pt-6 pb-16">
         <Suspense fallback={<Skeleton className="h-96" />}>

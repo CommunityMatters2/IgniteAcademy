@@ -7,8 +7,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <Glow />
       <header className="relative z-10 flex items-center gap-2.5 py-5">
         <Link href="/" className="flex items-center gap-2.5">
-          <Logo size={36} />
-          <Wordmark />
+          <Logo size={40} />
+          <Wordmark height={13} />
         </Link>
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center pb-16">

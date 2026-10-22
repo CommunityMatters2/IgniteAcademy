@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 export function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("rounded-3xl border border-border bg-surface p-5", className)}
+      className={cn("rounded-3xl border border-border bg-surface p-5 shadow-card", className)}
       {...props}
     />
   );
@@ -136,33 +136,41 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("skeleton rounded-2xl", className)} />;
 }
 
+const statTone = {
+  neutral: { bar: "bg-fg", wash: "", text: "", chip: "bg-surface-2 text-fg" },
+  green: { bar: "bg-brand", wash: "bg-gradient-to-br from-brand-soft to-surface", text: "text-brand", chip: "bg-brand text-brand-fg" },
+  gold: { bar: "bg-gold", wash: "bg-gradient-to-br from-gold-soft to-surface", text: "text-gold", chip: "bg-gold text-gold-fg" },
+  red: { bar: "bg-danger", wash: "bg-gradient-to-br from-danger-soft to-surface", text: "text-danger", chip: "bg-danger text-white" },
+  blue: { bar: "bg-info", wash: "bg-gradient-to-br from-info-soft to-surface", text: "text-info", chip: "bg-info text-white" },
+};
+
 export function Stat({
   label,
   value,
   hint,
-  tone,
+  tone = "neutral",
+  icon,
   className,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: React.ReactNode;
-  tone?: "green" | "gold" | "red";
+  tone?: keyof typeof statTone;
+  icon?: React.ReactNode;
   className?: string;
 }) {
+  const t = statTone[tone];
   return (
-    <Card className={cn("p-4", className)}>
-      <Eyebrow>{label}</Eyebrow>
-      <p
-        className={cn(
-          "mt-1.5 font-display text-3xl font-bold tracking-tight tabular-nums",
-          tone === "green" && "text-brand",
-          tone === "gold" && "text-gold",
-          tone === "red" && "text-danger",
+    <Card className={cn("relative overflow-hidden p-4 sm:p-5", t.wash, className)}>
+      <span aria-hidden className={cn("absolute inset-x-0 top-0 h-1", t.bar)} />
+      <div className="flex items-start justify-between gap-2">
+        <Eyebrow className="text-fg/70">{label}</Eyebrow>
+        {icon && (
+          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-xl [&_svg]:size-4", t.chip)}>{icon}</span>
         )}
-      >
-        {value}
-      </p>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+      </div>
+      <p className={cn("mt-2 font-display text-4xl font-extrabold tracking-tight tabular-nums", t.text)}>{value}</p>
+      {hint && <p className="mt-1 text-xs font-medium text-muted">{hint}</p>}
     </Card>
   );
 }
